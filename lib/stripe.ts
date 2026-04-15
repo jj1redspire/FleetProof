@@ -10,6 +10,7 @@ export const PLANS = {
     price: 99,
     priceId: process.env.STRIPE_PRICE_STARTER!,
     vehicles: 50,
+    vertical: 'fleet' as const,
     features: [
       'Up to 50 vehicles',
       'Unlimited checkout/return sessions',
@@ -26,6 +27,7 @@ export const PLANS = {
     price: 199,
     priceId: process.env.STRIPE_PRICE_PRO!,
     vehicles: 200,
+    vertical: 'fleet' as const,
     features: [
       'Up to 200 vehicles',
       'Everything in Starter',
@@ -40,6 +42,7 @@ export const PLANS = {
     price: 399,
     priceId: process.env.STRIPE_PRICE_ENTERPRISE!,
     vehicles: 999999,
+    vertical: 'fleet' as const,
     features: [
       'Unlimited vehicles',
       'Everything in Pro',
@@ -47,6 +50,40 @@ export const PLANS = {
       'API access',
       'White-label reports',
       'Dedicated support',
+    ],
+  },
+  // ── Towing vertical ──────────────────────────────────────────────────────
+  tow_single: {
+    name: 'Single Truck',
+    price: 39,
+    priceId: process.env.STRIPE_PRICE_TOW_SINGLE!,
+    vehicles: 1,
+    vertical: 'towing' as const,
+    features: [
+      '1 tow truck',
+      'Unlimited tow logs',
+      'Pre-tow vehicle documentation',
+      'Plate & VIN photo capture',
+      'Witness / officer signature',
+      'Hook-up point documentation',
+      'AI damage comparison',
+      'PDF claim defense reports',
+    ],
+  },
+  tow_unlimited: {
+    name: 'Towing Company',
+    price: 99,
+    priceId: process.env.STRIPE_PRICE_TOW_UNLIMITED!,
+    vehicles: 999999,
+    vertical: 'towing' as const,
+    features: [
+      'Unlimited tow trucks',
+      'Everything in Single Truck',
+      'Multiple drivers / operators',
+      'Driver damage history',
+      'Shift summary reports',
+      'Insurance export package',
+      'Priority support',
     ],
   },
 } as const

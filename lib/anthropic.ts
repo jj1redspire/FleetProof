@@ -47,12 +47,45 @@ function buildImageContent(photos: string[]): Anthropic.ImageBlockParam[] {
 export async function analyzeCondition(
   photos: string[],
   vehicleType: string,
-  vehicleNumber: string
+  vehicleNumber: string,
+  towMetadata?: Record<string, unknown> | null
 ): Promise<ConditionReport> {
   const positions = ['front', 'back', 'left side', 'right side'].slice(0, photos.length)
 
   const imageBlocks = buildImageContent(photos)
   const positionLabels = positions.map((p, i) => `Photo ${i + 1}: ${p}`).join(', ')
+
+  const isTowing = !!towMetadata
+  const towContext = isTowing ? `
+TOWING CONTEXT:
+- Tow reason: ${towMetadata?.tow_reason ?? 'unknown'}
+- License plate: ${towMetadata?.vehicle_plate || 'not captured'}
+- VIN: ${towMetadata?.vehicle_vin || 'not captured'}
+- Keys status: ${towMetadata?.keys_status ?? 'unknown'}
+- Hook-up point: ${towMetadata?.hook_up_point || 'not specified'}
+- Witness: ${towMetadata?.witness_name ? `Yes — ${towMetadata.witness_name}` : 'None'}
+
+As a tow pre-hook documentation record, be especially thorough about pre-existing damage — this documentation PROTECTS the tow operator from false damage claims.` : ''
+
+  const prompt = `You are a professional ${isTowing ? 'tow operator' : 'fleet vehicle'} inspector documenting vehicle condition.
+Vehicle: ${vehicleType} ${vehicleNumber ? `#${vehicleNumber}` : ''}
+Photo positions: ${positionLabels}.
+${towContext}
+Identify:
+1. Overall vehicle condition
+2. Any visible damage, scratches, dents, cracks, broken glass, missing parts, fluid leaks
+3. Notable observations per angle (be thorough — pre-existing damage must be documented)
+
+Respond ONLY with valid JSON:
+{
+  "overall_condition": "good|minor_damage|needs_repair",
+  "summary": "2 sentence summary of vehicle condition",
+  "condition_items": [
+    { "location": "front|back|left|right", "condition": "clean|minor_wear|damage|missing", "description": "specific observation" }
+  ],
+  "damage_visible": ["list of specific pre-existing damage items — empty array if none"],
+  "notes": "any other notable observations including safety concerns"
+}`
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -62,27 +95,7 @@ export async function analyzeCondition(
         role: 'user',
         content: [
           ...imageBlocks,
-          {
-            type: 'text',
-            text: `You are a professional fleet vehicle inspector. Analyze these photos of ${vehicleType} #${vehicleNumber}.
-Photo positions: ${positionLabels}.
-
-Identify:
-1. Overall vehicle condition
-2. Any visible damage, scratches, dents, cracks, or missing parts
-3. Notable observations per angle
-
-Respond ONLY with valid JSON:
-{
-  "overall_condition": "good|minor_damage|needs_repair",
-  "summary": "2 sentence summary of vehicle condition",
-  "condition_items": [
-    { "location": "front|back|left|right", "condition": "clean|minor_wear|damage|missing", "description": "specific observation" }
-  ],
-  "damage_visible": ["list of specific damage items if any — empty array if none"],
-  "notes": "any other notable observations"
-}`,
-          },
+          { type: 'text', text: prompt },
         ],
       },
     ],
@@ -101,7 +114,8 @@ export async function compareSession(
   vehicleNumber: string,
   driverName: string,
   checkoutTime: string,
-  returnTime: string
+  returnTime: string,
+  towMetadata?: Record<string, unknown> | null
 ): Promise<ComparisonResult> {
   const checkoutImages = buildImageContent(checkoutPhotos)
   const returnImages = buildImageContent(returnPhotos)
@@ -121,6 +135,13 @@ export async function compareSession(
             type: 'text',
             text: `Compare these before/after vehicle photos and identify ANY new damage that occurred during this session.
 
+${towMetadata ? `TOWING CONTEXT:
+This is a tow operation. The "checkout" photos were taken BEFORE hook-up (pre-tow documentation).
+The "return" photos were taken at drop-off/release (post-tow documentation).
+Tow reason: ${towMetadata.tow_reason ?? 'unknown'} | Driver: ${driverName}
+Any new damage found MAY be attributable to the tow operation OR may have been pre-existing and missed.
+Be conservative — only flag damage that is clearly NEW and not documented in the pre-tow photos.` : ''}
+
 Be specific about location and nature of damage. If the checkout photos show existing damage, do NOT flag it as new.
 Only flag damage that appears in return photos but was NOT present in checkout photos.
 
@@ -132,13 +153,13 @@ Respond ONLY with valid JSON:
       "location": "specific location (e.g. left rear fender, front bumper, roof)",
       "description": "specific description of damage",
       "severity": "minor|moderate|major",
-      "checkout_condition": "condition at checkout",
-      "return_condition": "condition at return"
+      "checkout_condition": "condition at checkout/pre-tow",
+      "return_condition": "condition at return/post-tow"
     }
   ],
   "unchanged": ["list of areas confirmed unchanged"],
   "summary": "2-3 sentence summary of comparison findings",
-  "attribution_statement": "Single sentence: e.g. Vehicle #47 was returned by John Smith at 2:15 PM with [damage description] not present at checkout."
+  "attribution_statement": "Single sentence: e.g. ${towMetadata ? `Vehicle (plate: ${towMetadata.vehicle_plate || 'unknown'}) towed by ${driverName} at ${checkoutTime} was released at ${returnTime} with [damage description/no new damage].` : `Vehicle #${vehicleNumber} was returned by ${driverName} at ${returnTime} with [damage description] not present at checkout.`}"
 }`,
           },
         ],

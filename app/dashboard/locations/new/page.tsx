@@ -12,6 +12,8 @@ const BUSINESS_TYPES = [
   { value: 'community', label: 'Retirement / Residential Community' },
   { value: 'university', label: 'University / Campus' },
   { value: 'hotel', label: 'Hotel / Airport Shuttle' },
+  { value: 'towing_company', label: 'Towing Company' },
+  { value: 'repo_recovery', label: 'Repo / Recovery Company' },
   { value: 'other', label: 'Other' },
 ]
 

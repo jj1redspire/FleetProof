@@ -12,8 +12,25 @@ export interface FPLocation {
   user_id: string
   name: string
   address: string | null
-  business_type: 'golf_course' | 'resort' | 'community' | 'university' | 'hotel' | 'other'
+  business_type: 'golf_course' | 'resort' | 'community' | 'university' | 'hotel' | 'towing_company' | 'repo_recovery' | 'other'
   created_at: string
+}
+
+export type TowReason = 'roadside' | 'accident' | 'police_impound' | 'repo' | 'parking_violation'
+export type KeysStatus = 'with_owner' | 'in_ignition' | 'not_available'
+
+export interface TowMetadata {
+  tow_reason: TowReason
+  vehicle_plate: string
+  vehicle_vin: string
+  keys_status: KeysStatus
+  hook_up_point: string
+  plate_photo: string | null
+  vin_photo: string | null
+  hook_up_photo: string | null
+  witness_name: string | null
+  witness_signature: string | null
+  police_report_number: string | null
 }
 
 export type VehicleCondition = 'good' | 'minor_damage' | 'needs_repair'
@@ -47,6 +64,7 @@ export interface FPSession {
   damage_detected: boolean
   damage_items: Record<string, unknown> | null
   damage_cost: number | null
+  tow_metadata: TowMetadata | null
   status: SessionStatus
   created_at: string
 }

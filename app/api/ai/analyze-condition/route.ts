@@ -8,10 +8,10 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { session_id, photos, vehicle_type, vehicle_number, phase } = await request.json()
+    const { session_id, photos, vehicle_type, vehicle_number, phase, tow_metadata } = await request.json()
     if (!photos || photos.length === 0) return NextResponse.json({ error: 'No photos provided' }, { status: 400 })
 
-    const report = await analyzeCondition(photos, vehicle_type ?? 'vehicle', vehicle_number ?? 'unknown')
+    const report = await analyzeCondition(photos, vehicle_type ?? 'vehicle', vehicle_number ?? 'unknown', tow_metadata ?? null)
 
     // Save to session
     if (session_id && phase) {
