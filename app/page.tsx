@@ -294,6 +294,8 @@ export default function LandingPage() {
           <div className="flex gap-6 text-sm text-charcoal-400">
             <Link href="/auth/login" className="hover:text-charcoal">Log in</Link>
             <Link href="/auth/signup" className="hover:text-charcoal">Sign up</Link>
+            <Link href="/terms" className="hover:text-charcoal">Terms</Link>
+            <Link href="/privacy" className="hover:text-charcoal">Privacy</Link>
           </div>
           <p className="text-charcoal-200 text-sm">© 2026 FleetProof. All rights reserved.</p>
         </div>
